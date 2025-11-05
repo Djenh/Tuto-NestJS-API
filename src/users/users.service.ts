@@ -1,18 +1,37 @@
-import { Injectable } from '@nestjs/common';
-/* import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto'; */
-import { Prisma, User } from 'generated/prisma/client';
+import { Injectable, ConflictException } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { User } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
 
   constructor(private readonly prismaService: PrismaService){}
 
-  async create(createUserDto: Prisma.UserCreateInput): Promise<User> {
-    return this.prismaService.user.create({
-      data: createUserDto
+  async create(createUserDto: CreateUserDto): Promise<User> {
+
+    const existingUser = await this.prismaService.user.findUnique({
+      where: { email: createUserDto.email },
     });
+
+    if (existingUser) {
+      throw new ConflictException('Cet email est déjà utilisé');
+    }
+
+    const passwordHash =  await bcrypt.hash(createUserDto.password, 10);
+
+    const user = this.prismaService.user.create({
+        data: {
+          name: createUserDto.name,
+          email: createUserDto.email,
+          password: passwordHash,
+          phone: createUserDto.phone,
+        }
+      });
+
+    return user;
   }
 
   async findAll(): Promise<User[]> {
@@ -26,7 +45,7 @@ export class UsersService {
     });
   }
 
-  async update(id: number, updateUserDto: Prisma.UserUpdateInput): Promise<User> {
+  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     return this.prismaService.user.update({
       where: {id: id}, 
       data: updateUserDto

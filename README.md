@@ -35,13 +35,17 @@ If everything runs well, you'll see a **`Hello World`** messsage
 
 
 
-## 2. Settin up database
+## 2. Setting up the database
 
 ### 2.1. Install Prisma
 
 Prisma is an open-source ORM for Node.js and TypeScript
 ```bash
 npm install prisma --save-dev
+```
+
+```bash
+npm install bcrypt
 ```
 
 Now create your initial Prisma setup using the init command of the Prisma CLI:
@@ -54,7 +58,7 @@ In the file `schema.prisma` ensure that you have the following lines
 ```typescript
 generator client {
   provider = "prisma-client-js"
-  output   = "../generated/prisma"
+  //output   = "../generated/prisma"
 }
 
 datasource db {
@@ -105,7 +109,7 @@ npx prisma generate
 ```
 
 ```bash
-npx prisma migrate dev --name editmodels
+npx prisma migrate dev --name edit_service_model
 ```
 
 ### 2.3. Create Prisma module and service
@@ -118,14 +122,14 @@ nest generate module prisma
 nest generate service prisma
 ```
 
-Check the content of files `prisma.service.ts` and `prisma.module.ts` in my repository
+Check the content of files `prisma.service.ts` and `prisma.module.ts` in my repository for the complete source code.
 
 
 ### 2.3. Create resources based on models
 For each model we have in our Prisma schema, we can create a resource for it. 
 A resource will craft by default 
 - DTO
-- entities
+- entity
 - controller
 - service
 - module
@@ -156,49 +160,71 @@ We will not use the `user.entity.ts` file created as we'll use Prisma related mo
 ### 2.4. Implement controller and service
 In `user.module.ts` file, import *PrismaModule*
 
-In `user.controller.ts` file, replace the DTO by this one `Prisma.UserCreateInput` and `Prisma.UserUpdateInput`
+```typescript
+imports: [PrismaModule],
+```
+
+
+In `user.controller.ts` file, add constructor with PrismaService injected in it.
 
 ```typescript
-import { Prisma } from 'generated/prisma';
+constructor(private readonly usersService: UsersService) {}
 
-create(@Body() createUserDto: Prisma.UserCreateInput) {
+@Post()
+create(@Body() createUserDto: CreateUserDto) {
   return this.usersService.create(createUserDto);
 }
 
-@Patch(':id')
-update(@Param('id') id: string, @Body() updateUserDto: Prisma.UserUpdateInput) {
-  return this.usersService.update(+id, updateUserDto);
-}
+...
 ```
 
-In `user.service.ts` file, replace the DTO by this one `Prisma.UserCreateInput` and `Prisma.UserUpdateInput`
-Also add constructor with PrismaService injected in it.
-
+In `user.service.ts` file, add constructor with PrismaService injected in it.
 
 ```typescript
-import { Prisma } from 'generated/prisma';
 import { PrismaService } from 'src/prisma/prisma.service';
+import * as bcrypt from 'bcrypt';
 
 constructor(private readonly prismaService: PrismaService){}
 
-async create(createUserDto: Prisma.UserCreateInput): Promise<User> {
-  return this.prismaService.user.create({
-    data: createUserDto
+async create(createUserDto: CreateUserDto): Promise<User> {
+
+  const existingUser = await this.prismaService.user.findUnique({
+    where: { email: createUserDto.email },
   });
+
+  if (existingUser) {
+    throw new ConflictException('Cet email est déjà utilisé');
+  }
+
+  const passwordHash =  await bcrypt.hash(createUserDto.password, 10);
+
+  const user = this.prismaService.user.create({
+      data: {
+        name: createUserDto.name,
+        email: createUserDto.email,
+        password: passwordHash,
+        phone: createUserDto.phone,
+      }
+    });
+
+  return user;
 }
+...
 ```
-Check the content of files in my repository to see the full source code.
+
+Check the content of files in my Github repository to see the complete source code.
 
 Now run 
 ```bash
 npm run start:dev
 ```
+
 And see if the command runs sucessfully.
 
-If you have the following error
-`**node:internal/modules/cjs/loader:1386 Error: Cannot find module '../../generated/prisma/index.js**`
-
-Then go to `tsconfig.json` file at the root of your project folder and update these lines
+> [!NOTE]  
+> If you have the following error
+`**Object.defineProperty(exports, "__esModule", { value: true }); ReferenceError: exports is not defined in ES module scope**`
+> Then go to `tsconfig.json` file at the root of your project folder and update these lines
 
 ```typescript
 "module": "commonjs",
@@ -206,7 +232,6 @@ Then go to `tsconfig.json` file at the root of your project folder and update th
 // "resolvePackageJsonExports": true,
 "target": "ES2021",
 ```
-
 
 In the file `tsconfig.build.json` add this line
 
@@ -222,6 +247,59 @@ npx prisma generate
 ```bash
 npm run start:dev
 ```
+
+> [!NOTE]  
+> If you have the following error
+`**node:internal/modules/cjs/loader:1386 throw err;Error: Cannot find module '../../generated/prisma/index.js'**`
+
+> Then go to `schema.prisma` file and remove the line `output   = "../generated/prisma"`
+
+```typescript
+generator client {
+  provider = "prisma-client-js"
+  // output   = "../generated/prisma"
+}
+```
+
+In the file `prisma.service.ts`, make sure that the PrismaClient is imported from `@prisma/client`
+```typescript
+import { PrismaClient } from '@prisma/client';
+```
+Correct the import from other files where you use PrismaClient or Prisma.
+
+```bash
+rm -R generated
+```
+
+```bash
+npx prisma generate
+```
+
+```bash
+npm run start:dev
+```
+
+
+### 2.5. Test the endpoints
+As our application represents a REST API, we'll prefix the routes with `\api\` text.
+Go to `main.ts` file and add this
+
+```typescript
+sync function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.setGlobalPrefix('api'); //Set prefix api here
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+```
+Now all endpoints will be in format **http://ip_address:3000/api/users**
+
+With Postman or other API testing tool, test endpoints
+- GET http://ip_address:3000/api/users
+- GET http://ip_address:3000/api/users/1
+- POST http://ip_address:3000/api/users
+
 
 
 ## 3. Authentication with JWT (JSON Web Token)

@@ -1,24 +1,35 @@
-import { IsString, IsEmail, IsNotEmpty, MinLength, Matches } from 'class-validator';
+import { IsString, IsEmail, IsNotEmpty, MinLength, Matches, IsOptional } from 'class-validator';
 
 export class RegisterDto {
 
-    @IsNotEmpty()
     @IsString()
     @MinLength(4)
+    @IsNotEmpty({ message: "Le nom est requis" })
     name: string;
 
     @IsEmail()
+    @IsNotEmpty({ message: "L'email est requis" })
     email: string;
-
-    @IsNotEmpty()
+    
     @IsString()
-    @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{4,}$/, 
-        {
-        message: "Le mot de passe doit avoir au moins 4 caractères et contenir au moins une lettre majuscule, un chiffre et caractère spécial",
-      })
+    @IsNotEmpty({ message: "Le mot de passe est requis" })
+    @MinLength(4, { message: "Mot de passe : au moins 4 caractères requis" })
+    @Matches(/(?=.*[a-z])/, {
+        message: "Mot de passe : au moins une lettre minuscule requise"
+    })
+    @Matches(/(?=.*[A-Z])/, {
+        message: "Mot de passe : au moins une lettre majuscule requise"
+    })
+    @Matches(/(?=.*\d)/, {
+        message: "Mot de passe : au moins un chiffre requis"
+    })
+    @Matches(/(?=.*[@$!%*?&\-_#.,:;])/, {
+        message: "Mot de passe : au moins un caractère spécial requis (@$!%*?&)"
+    })
     password: string;
 
     @IsString()
-	@MinLength(8)
-	phone: string;
+    @IsOptional()
+    @MinLength(8)
+    phone?: string;
 }
