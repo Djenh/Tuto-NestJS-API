@@ -7,17 +7,16 @@
 
   <p align="center">Step by step guide to build a full NestJS REST API app with authentication, middlewares, roles and permissions, controllers and services.</p>
 
-## Description
-
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
 ## 1. Project setup
+Create the project folder by running the following command
 
 ```bash
 nest new tuto-nest-api
 ```
 
-Then choose `npm` or `yarn` or `pnpm` as your packages manager to craft the app.
+Then choose `npm` or `yarn` or `pnpm` as your packages manager to craft the app. 
+After creating the project go to it directory and open the project folder with your code editor.
 
 ```bash
 cd new tuto-nest-api
@@ -32,70 +31,157 @@ Check if the project is well set up
 npm run start:dev
 ```
 And go to [http://localhost:3000/](http://localhost:3000/)
-If everything runs well, you'll see a **Hello World** messsage
+If everything runs well, you'll see a **`Hello World`** messsage
 
-## Compile and run the project
 
+
+## 2. Settin up database
+
+### 2.1. Install Prisma
+
+Prisma is an open-source ORM for Node.js and TypeScript
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+npm install prisma --save-dev
 ```
 
-## Run tests
+Now create your initial Prisma setup using the init command of the Prisma CLI:
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+npx prisma init
 ```
+This command creates a new prisma directory with `schema.prisma` and `.env` files
 
-## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+## 3. Authentication with JWT (JSON Web Token)
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### 3.1. Create files
+Create a Auth module, controller and service
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+nest g module auth
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+```bash
+nest g controller auth
+```
 
-## Resources
+```bash
+nest g service auth
+```
 
-Check out a few resources that may come in handy when working with NestJS:
+### 3.2. Create DTO (Data Transfer Object) files
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+Add class validator package
+```bash
+npm i --save class-validator class-transformer
+```
 
-## Support
+Create a Login DTO file in auth folder `auth\dto\login.dto.ts`
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+```typescript
+export class LoginDto {
+  @IsEmail()
+  email: string;
 
-## Stay in touch
+  @IsNotEmpty()
+	@IsString()
+	@MinLength(4)
+  password: string;
+}
+```
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Create a Register DTO file in auth folder `auth\dto\register.dto.ts`
 
-## License
+```typescript
+export class RegisterDto {
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+    @IsNotEmpty()
+    @IsString()
+    @MinLength(4)
+    name: string;
+
+    @IsEmail()
+    email: string;
+
+    @IsNotEmpty()
+    @IsString()
+    @MinLength(4)
+    password: string;
+
+    @IsString()
+    @MinLength(8)
+    phone: string;
+}
+```
+
+Go to file `main.ts` and add this
+```typescript
+app.useGlobalPipes(new ValidationPipe());
+```
+
+Install bcrypt package
+```bash
+npm install bcrypt @types/bcrypt
+```
+
+```typescript
+const password = await bcrypt.hash(data.password, 10);
+```
+
+
+### 3.3. Add JWT package
+
+- Install JWT packages
+```bash
+npm install @nestjs/jwt @nestjs/passport passport passport-jwt passport-local
+```
+
+- Generate a random JWT secret key for your project
+
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+```
+
+```bash
+npm install dotenv
+```
+
+- Add the secret string in you `.env` file
+```bash
+JWT_SECRET=723002aa4....
+```
+
+Now set up, the JWT module in the auth module. 
+
+- Go to `auth.module.ts` file and add this
+```typescript
+imports: [
+    JwtModule.register({
+    secret: env('JWT_SECRET'),
+    signOptions: { expiresIn: '1d'},
+  })
+],
+```
+
+- Go to `auth.service.ts` file and add **constructor()**
+
+```typescript
+constructor(private jwtService: JwtService) {}
+```
+
+- Go to `auth.controller.ts` file
+
+```typescript
+constructor(private authService: AuthService){}
+
+@Post('login')
+login(@Body() data: AuthDto) {
+    const user = this.authService.validateUser(data);
+
+    if(!user) throw new HttpException('Identifiants incorrects', 401);
+
+    return user;
+}
+```
+
+
