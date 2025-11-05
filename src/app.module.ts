@@ -3,6 +3,10 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { ConfigModule } from '@nestjs/config';
+import { PrismaModule } from './prisma/prisma.module';
+import { UsersModule } from './users/users.module';
+import { ServicesModule } from './services/services.module';
+import { PicturesModule } from './pictures/pictures.module';
 import configuration from 'config/configuration';
 
 @Module({
@@ -12,6 +16,10 @@ import configuration from 'config/configuration';
       load: [configuration],
     }),
     AuthModule,
+    PrismaModule,
+    UsersModule,
+    ServicesModule,
+    PicturesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

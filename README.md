@@ -50,6 +50,178 @@ Now create your initial Prisma setup using the init command of the Prisma CLI:
 npx prisma init
 ```
 This command creates a new prisma directory with `schema.prisma` and `.env` files
+In the file `schema.prisma` ensure that you have the following lines
+```typescript
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+```
+But it will depends of the database manager, you're using. Please check this link for others DB manager
+[https://docs.nestjs.com/recipes/prisma#set-up-prisma](https://docs.nestjs.com/recipes/prisma#set-up-prisma)
+
+Now, install `dotenv` package
+```bash
+npm install dotenv
+```
+
+In the file `prisma.config.ts` add the import package dotenv
+```typescript
+import "dotenv/config";
+```
+
+Check your `.env` file to ensure that the **DATABASE_URL** is correct.
+
+
+### 2.2. Create migrations in Prisma
+
+In the file `schema.prisma` create your models
+
+Now run 
+```bash
+npx prisma migrate dev --name init
+```
+
+This command will create migrations in your database and it will automatically install Prisma Client
+for your project if it not yet set up.
+In case prisma clien is not installed with that command, please run the following one
+
+```bash
+npm install @prisma/client
+```
+
+As we run the command with `dev` option, you can now see a migration file created by Prisma in the
+directory `prisma\migrations\2025...\migration.sql`
+
+
+Everytime you modify your models, you need to run these commands
+```bash
+npx prisma generate
+```
+
+```bash
+npx prisma migrate dev --name editmodels
+```
+
+### 2.3. Create Prisma module and service
+We need to interact with our database.
+```bash
+nest generate module prisma
+```
+
+```bash
+nest generate service prisma
+```
+
+Check the content of files `prisma.service.ts` and `prisma.module.ts` in my repository
+
+
+### 2.3. Create resources based on models
+For each model we have in our Prisma schema, we can create a resource for it. 
+A resource will craft by default 
+- DTO
+- entities
+- controller
+- service
+- module
+
+Let's create for User, Service and Picture. While creating a resource, it will prompt in command line
+to choose if it's for 
+- REST API 
+- GraphQL
+- Microservice
+- WebSockets
+In our case, we'll choose REST API. And also, hit **Yes** when it asked would you like to generate CRUD entry points.
+
+```bash
+nest generate resource users
+```
+
+```bash
+nest generate resource services
+```
+
+```bash
+nest generate resource pictures
+```
+Differents folders are now created for each resource.
+We will not use the `user.entity.ts` file created as we'll use Prisma related model directly.
+
+
+### 2.4. Implement controller and service
+In `user.module.ts` file, import *PrismaModule*
+
+In `user.controller.ts` file, replace the DTO by this one `Prisma.UserCreateInput` and `Prisma.UserUpdateInput`
+
+```typescript
+import { Prisma } from 'generated/prisma';
+
+create(@Body() createUserDto: Prisma.UserCreateInput) {
+  return this.usersService.create(createUserDto);
+}
+
+@Patch(':id')
+update(@Param('id') id: string, @Body() updateUserDto: Prisma.UserUpdateInput) {
+  return this.usersService.update(+id, updateUserDto);
+}
+```
+
+In `user.service.ts` file, replace the DTO by this one `Prisma.UserCreateInput` and `Prisma.UserUpdateInput`
+Also add constructor with PrismaService injected in it.
+
+
+```typescript
+import { Prisma } from 'generated/prisma';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+constructor(private readonly prismaService: PrismaService){}
+
+async create(createUserDto: Prisma.UserCreateInput): Promise<User> {
+  return this.prismaService.user.create({
+    data: createUserDto
+  });
+}
+```
+Check the content of files in my repository to see the full source code.
+
+Now run 
+```bash
+npm run start:dev
+```
+And see if the command runs sucessfully.
+
+If you have the following error
+`**node:internal/modules/cjs/loader:1386 Error: Cannot find module '../../generated/prisma/index.js**`
+
+Then go to `tsconfig.json` file at the root of your project folder and update these lines
+
+```typescript
+"module": "commonjs",
+"moduleResolution": "node",
+// "resolvePackageJsonExports": true,
+"target": "ES2021",
+```
+
+
+In the file `tsconfig.build.json` add this line
+
+```typescript
+"include": ["src", "generated"],
+```
+
+Rebuild the Prisma client by running
+```bash
+npx prisma generate
+```
+
+```bash
+npm run start:dev
+```
 
 
 ## 3. Authentication with JWT (JSON Web Token)
@@ -89,6 +261,7 @@ export class LoginDto {
   password: string;
 }
 ```
+
 
 Create a Register DTO file in auth folder `auth\dto\register.dto.ts`
 

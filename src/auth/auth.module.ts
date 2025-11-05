@@ -11,6 +11,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
         inject: [ConfigService],
         global: true,
         useFactory: async (config) =>({
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
           secret: await config.get('jwt.secret'), 
           signOptions: { expiresIn: '1d'},
         }),
