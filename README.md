@@ -43,9 +43,9 @@ Prisma is an open-source ORM for Node.js and TypeScript
 ```bash
 npm install prisma --save-dev
 ```
-
+To hash password in database
 ```bash
-npm install bcrypt
+npm install bcrypt @types/bcrypt
 ```
 
 Now create your initial Prisma setup using the init command of the Prisma CLI:
@@ -85,6 +85,11 @@ Check your `.env` file to ensure that the **DATABASE_URL** is correct.
 ### 2.2. Create migrations in Prisma
 
 In the file `schema.prisma` create your models
+
+After model is written, run command to format in Prisma tabulation
+```bash
+npm prisma format
+```
 
 Now run 
 ```bash
@@ -229,7 +234,7 @@ And see if the command runs sucessfully.
 ```typescript
 "module": "commonjs",
 "moduleResolution": "node",
-// "resolvePackageJsonExports": true,
+// "resolvePackageJsonExports": true, // <---Delete this line
 "target": "ES2021",
 ```
 
@@ -251,13 +256,12 @@ npm run start:dev
 > [!NOTE]  
 > If you have the following error
 `**node:internal/modules/cjs/loader:1386 throw err;Error: Cannot find module '../../generated/prisma/index.js'**`
-
 > Then go to `schema.prisma` file and remove the line `output   = "../generated/prisma"`
 
 ```typescript
 generator client {
   provider = "prisma-client-js"
-  // output   = "../generated/prisma"
+  // output   = "../generated/prisma" // <---Delete this line
 }
 ```
 
@@ -288,7 +292,7 @@ Go to `main.ts` file and add this
 sync function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.setGlobalPrefix('api'); //Set prefix api here
+  app.setGlobalPrefix('api'); // <--- Set 'api' as prefix here
 
   await app.listen(process.env.PORT ?? 3000);
 }
@@ -326,57 +330,45 @@ Add class validator package
 npm i --save class-validator class-transformer
 ```
 
-Create a Login DTO file in auth folder `auth\dto\login.dto.ts`
+Create a Login and Register DTO file in auth folder
+
+For example in `auth\dto\login.dto.ts` file, you have this
 
 ```typescript
 export class LoginDto {
   @IsEmail()
+  @IsNotEmpty({ message: "L'email est requis" })
   email: string;
-
-  @IsNotEmpty()
-	@IsString()
-	@MinLength(4)
+  
+  @IsString()
+  @IsNotEmpty({ message: "Le mot de passe est requis" })
+  @MinLength(4, { message: "Mot de passe : au moins 4 caractères requis" })
+  @Matches(/(?=.*[a-z])/, {
+      message: "Mot de passe : au moins une lettre minuscule requise"
+  })
+  @Matches(/(?=.*[A-Z])/, {
+      message: "Mot de passe : au moins une lettre majuscule requise"
+  })
+  @Matches(/(?=.*\d)/, {
+      message: "Mot de passe : au moins un chiffre requis"
+  })
+  @Matches(/(?=.*[@$!%*?&\-_#.,:;])/, {
+      message: "Mot de passe : au moins un caractère spécial requis (@$!%*?&)"
+  })
   password: string;
 }
 ```
 
 
-Create a Register DTO file in auth folder `auth\dto\register.dto.ts`
-
-```typescript
-export class RegisterDto {
-
-    @IsNotEmpty()
-    @IsString()
-    @MinLength(4)
-    name: string;
-
-    @IsEmail()
-    email: string;
-
-    @IsNotEmpty()
-    @IsString()
-    @MinLength(4)
-    password: string;
-
-    @IsString()
-    @MinLength(8)
-    phone: string;
-}
-```
-
 Go to file `main.ts` and add this
 ```typescript
-app.useGlobalPipes(new ValidationPipe());
-```
-
-Install bcrypt package
-```bash
-npm install bcrypt @types/bcrypt
-```
-
-```typescript
-const password = await bcrypt.hash(data.password, 10);
+app.useGlobalPipes(new ValidationPipe(
+  {
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }
+));
 ```
 
 
@@ -385,6 +377,19 @@ const password = await bcrypt.hash(data.password, 10);
 - Install JWT packages
 ```bash
 npm install @nestjs/jwt @nestjs/passport passport passport-jwt passport-local
+```
+
+```bash
+npm install --save-dev @types/passport-jwt @types/passport-local
+```
+
+- Install bcrypt package
+```bash
+npm install bcrypt @types/bcrypt
+```
+
+```typescript
+const password = await bcrypt.hash(data.password, 10);
 ```
 
 - Generate a random JWT secret key for your project
@@ -402,37 +407,106 @@ npm install dotenv
 JWT_SECRET=723002aa4....
 ```
 
-Now set up, the JWT module in the auth module. 
+Now set up, the JWT module in the auth module.
+First of all, you need to implement a *ConfigModule* in order to read environment variables from `.env` file and set them up in a config file which will be available globally in your project.
+
+Please check these tutorials to know exactly how to configure it.
+
+[https://medium.com/@a.pouryousefi98/environment-variables-in-nestjs-5625047489da](https://medium.com/@a.pouryousefi98/environment-variables-in-nestjs-5625047489da)
+
+[https://dev.to/gmdias727/how-to-set-up-env-variables-in-a-nestjs-project-1o25](https://dev.to/gmdias727/how-to-set-up-env-variables-in-a-nestjs-project-1o25)
+
 
 - Go to `auth.module.ts` file and add this
 ```typescript
 imports: [
-    JwtModule.register({
-    secret: env('JWT_SECRET'),
-    signOptions: { expiresIn: '1d'},
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      global: true,
+      useFactory: async (config) =>({
+        secret: await config.get('jwt.secret'), 
+        signOptions: { expiresIn: '1d'},
+      }),
   })
 ],
 ```
 
+- Create a JwtStrategy file. It defines how to NestJs will decode and validate our JWT tokens which come from any request.
+Please check my repository for full source code in `src\auth\jwt.strategy.ts` file.
+
+- Add *PassportModule* also in *imports* array. And add JwtStrategy and PrismaService in *providers* array.
+
+- Finally, the file `auth.module.ts` looks like
+```typescript
+@Module({
+  imports: [
+    PassportModule,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      global: true,
+      useFactory: async (config) =>({
+        secret: await config.get('jwt.secret'), 
+        signOptions: { expiresIn: '1d'},
+      }),
+    })
+  ],
+  controllers: [AuthController],
+  providers: [AuthService, JwtStrategy, PrismaService]
+})
+export class AuthModule {}
+```
+
+
 - Go to `auth.service.ts` file and add **constructor()**
 
 ```typescript
-constructor(private jwtService: JwtService) {}
+constructor(
+    private jwtService: JwtService,
+    private prismaService: PrismaService
+) {}
 ```
 
 - Go to `auth.controller.ts` file
 
 ```typescript
-constructor(private authService: AuthService){}
+constructor(private readonly authService: AuthService){}
+```
 
-@Post('login')
-login(@Body() data: AuthDto) {
-    const user = this.authService.validateUser(data);
+### 3.4. Implement Authentication code
 
-    if(!user) throw new HttpException('Identifiants incorrects', 401);
+Check my repository to get full source code of implementation of functions in `auth.service.ts` file
+- register
+- login
+-validate
 
-    return user;
+In order to protect the route `GET /profile` from non-authenticate users, we will add a **Guard auth** in the controller for this route.
+
+So create a file `src\auth\jwt.guard.ts` and add source code from my repository.
+
+Come back in `src\auth\auth.controller.ts` file and add Guard decorator for controller Get Profile.
+
+```typescript
+@UseGuards(JwtAuthGuard)
+@Get('profile')
+async profile(@Request() req) {
+    return this.authService.validate(req.user.sub);
 }
 ```
 
+Now you can test your application 
+
+```bash
+npm run start:dev
+```
+
+With Postman or other API testing tool, test endpoints
+- GET http://ip_address:3000/api/auth/register
+- GET http://ip_address:3000/api/auth/login
+- POST http://ip_address:3000/api/auth/profile
+
+If you want to see your access token payload, go to JWT website and paste the token
+
+[https://www.jwt.io/](https://www.jwt.io/)
 

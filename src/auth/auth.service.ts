@@ -1,54 +1,74 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { ConflictException, HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
-
-const fakeUsers = [
-  {
-    id: 1,
-    email: 'anson@gmail.com',
-    password: 'password',
-  },
-  {
-    id: 2,
-    email: 'jack@gmail.com',
-    password: 'password123',
-  },
-];
+import { PrismaService } from 'src/prisma/prisma.service';
 
 
 @Injectable()
 export class AuthService {
-    constructor(private jwtService: JwtService) {}
+    constructor(
+        private jwtService: JwtService,
+        private prismaService: PrismaService
+    ) {}
     
-    async validateUser({email, password}: LoginDto){
-        const findUser = fakeUsers.find((user) => user.email === email);
 
-        if (!findUser) return null;
+    async register(data: RegisterDto){
+        const existingUser = await this.prismaService.user.findUnique({
+            where: {email: data.email}
+        });
 
-        // const passwordHash = await bcrypt.compare(password, findUser.password);
+        if(existingUser) throw new ConflictException("Email déjà existant");
 
-        if (password === findUser.password) {
-        // if (passwordHash) {
-            const { password, ...user } = findUser;
-            return this.jwtService.sign(user);
-        }
-        else{
-            throw new HttpException('Identifiants incorrects', 401);
-        }
+        const passwordHash = await bcrypt.hash(data.password, 10);
+
+        const user = await this.prismaService.user.create({
+            data: {
+                name: data.name,
+                email: data.email,
+                password: passwordHash,
+                phone: data.phone
+            }
+        });
+
+        const payload = {sub: user.id, email: user.email};
+        const access_token = await this.jwtService.signAsync(payload);
+
+        return {user, access_token};
     }
 
-    async registerUser(data: RegisterDto){
-        const findUser = fakeUsers.find((user) => user.email === data.email);
 
-        if (findUser){
-            throw new HttpException('Email déjà utilisé', 400);
-        }
-        else {
-            const password = await bcrypt.hash(data.password, 10);
+    async login(data: LoginDto){
+        const user = await this.prismaService.user.findUnique({
+            where: {email: data.email}
+        });
 
-            // return this.jwtService.sign(findUser);
-        }
+        if(!user) throw new UnauthorizedException("Email et/ou mot de passe incorrect");
+
+        const isPassValid = await bcrypt.compare(data.password, user.password);
+
+        if(!isPassValid) throw new UnauthorizedException("Email et/ou mot de passe incorrect");
+
+        const payload = {sub: user.id, email: user.email};
+        const access_token = await this.jwtService.signAsync(payload);
+
+        return {user, access_token};
+    }
+
+
+    async validate(userId: number){
+        const user = await this.prismaService.user.findUnique({
+            where: {id: userId},
+            select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+                createdAt: true
+            }
+        });
+
+        return user;        
     }
 }

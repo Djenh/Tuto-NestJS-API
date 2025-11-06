@@ -1,24 +1,28 @@
-import { Controller, Body, Post, HttpException } from '@nestjs/common';
+import { Controller, Body, Post, Get, Request, UseGuards } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
+import { JwtAuthGuard } from './jwt.guard';
 
 @Controller('auth')
 export class AuthController {
-    constructor(private authService: AuthService){}
+    constructor(private readonly authService: AuthService){}
 
-    @Post('login')
-    login(@Body() data: LoginDto) {
-        const user = this.authService.validateUser(data);
-
-        if(!user) throw new HttpException('Identifiants incorrects', 401);
-
-        return user;
+    @Post('register')
+    async register(@Body() data: RegisterDto) {
+        return this.authService.register(data);
     }
 
 
     @Post('login')
-    register(@Body() data: RegisterDto) {
-        return this.authService.registerUser(data);
+    login(@Body() data: LoginDto) {
+        return this.authService.login(data);
+    }
+      
+
+    @UseGuards(JwtAuthGuard)
+    @Get('profile')
+    async profile(@Request() req) {
+        return this.authService.validate(req.user.subject);
     }
 }

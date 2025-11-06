@@ -7,7 +7,7 @@ export class LoginDto {
     
     @IsString()
     @IsNotEmpty({ message: "Le mot de passe est requis" })
-    @MinLength(4, { message: "Mot de passe : au moins 4 caractères requis" })
+    /* @MinLength(4, { message: "Mot de passe : au moins 4 caractères requis" })
     @Matches(/(?=.*[a-z])/, {
         message: "Mot de passe : au moins une lettre minuscule requise"
     })
@@ -19,6 +19,6 @@ export class LoginDto {
     })
     @Matches(/(?=.*[@$!%*?&\-_#.,:;])/, {
         message: "Mot de passe : au moins un caractère spécial requis (@$!%*?&)"
-    })
+    }) */
     password: string;
 }
