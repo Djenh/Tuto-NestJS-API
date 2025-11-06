@@ -58,7 +58,7 @@ In the file `schema.prisma` ensure that you have the following lines
 ```typescript
 generator client {
   provider = "prisma-client-js"
-  //output   = "../generated/prisma"
+  //output   = "../generated/prisma" // <---- Delete this line
 }
 
 datasource db {
@@ -145,6 +145,7 @@ to choose if it's for
 - GraphQL
 - Microservice
 - WebSockets
+
 In our case, we'll choose REST API. And also, hit **Yes** when it asked would you like to generate CRUD entry points.
 
 ```bash
@@ -226,7 +227,7 @@ npm run start:dev
 
 And see if the command runs sucessfully.
 
-> [!NOTE]  
+> [!IMPORTANT]  
 > If you have the following error
 `**Object.defineProperty(exports, "__esModule", { value: true }); ReferenceError: exports is not defined in ES module scope**`
 > Then go to `tsconfig.json` file at the root of your project folder and update these lines
@@ -253,7 +254,7 @@ npx prisma generate
 npm run start:dev
 ```
 
-> [!NOTE]  
+> [!IMPORTANT]  
 > If you have the following error
 `**node:internal/modules/cjs/loader:1386 throw err;Error: Cannot find module '../../generated/prisma/index.js'**`
 > Then go to `schema.prisma` file and remove the line `output   = "../generated/prisma"`
@@ -360,7 +361,7 @@ export class LoginDto {
 ```
 
 
-Go to file `main.ts` and add this
+Go to file `main.ts` and add this in `function bootstrap()`
 ```typescript
 app.useGlobalPipes(new ValidationPipe(
   {
