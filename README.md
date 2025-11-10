@@ -511,3 +511,80 @@ If you want to see your access token payload, go to JWT website and paste the to
 
 [https://www.jwt.io/](https://www.jwt.io/)
 
+
+## 4. Middlewares and Guards
+
+### 4.1. Create an Middleware file
+Middleware is a function which is called before the route handler. Middleware functions have access to the request and response objects, and the next() middleware function in the application’s request-response cycle. 
+
+Middleware functions intercept both incoming HTTP requests and outgoing responses.
+
+Create a file `src\middlewares\logger.middleware.ts`
+
+Copy and paste the content of the file in my Github repository.
+
+Go to the file `src\app.module.ts` and complete the AppModule class with the following source code.
+
+```typescript
+@Module({
+  imports: [],
+  controllers: [AppController],
+  providers: [AppService],
+})
+
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(LoggerMiddleware)
+      .forRoutes({ path: 'cats', method: RequestMethod.GET });
+  }
+}
+```
+
+Check this answer for more explanation about Middleware
+
+[https://stackoverflow.com/questions/58582886/what-is-the-difference-between-useguards-and-middleware-in-nestjs](https://stackoverflow.com/questions/58582886/what-is-the-difference-between-useguards-and-middleware-in-nestjs)
+
+
+
+
+
+### 4.2. Create an Auth Guard file
+Now we need to protect our endpoints by requiring a valid JWT be present on the request. We'll do this by creating an AuthGuard that we can use to protect our routes.
+
+Guards are primarily focused on access control and route-level authentication.
+
+Create a file `src\auth\guards\auth.guard.ts`
+
+Copy and paste the content of the file in my Github repository.
+
+Go to the file `src\users\users.controller.ts` and add Guard decorator for controller.
+
+```typescript
+@Controller('users')
+@UseGuards(AuthGuard)
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  ...
+}
+```
+By this way, all endpoints in `/api/users/` will require AuthGuard, a correct JWT before giving access to the user.
+
+Run the command
+
+```bash
+npm run start:dev
+```
+
+Test endpoints, with Postman or other API testing tool
+- GET http://ip_address:3000/api/users
+- GET http://ip_address:3000/api/users/1
+
+
+
+## 5. Authorization : roles and permissions
+
+### 5.1. Role based access control
+
+

@@ -23,6 +23,6 @@ export class AuthController {
     @UseGuards(JwtAuthGuard)
     @Get('profile')
     async profile(@Request() req) {
-        return this.authService.validate(req.user.subject);
+        return this.authService.validate(req.user.sub);
     }
 }
