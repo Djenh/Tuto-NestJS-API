@@ -15,38 +15,31 @@ export class UsersController {
   constructor(private readonly usersService: UsersService, 
     private readonly prismaService: PrismaService) {}
 
-  @Permissions([
-    {resource: Resource.USERS, actions: [Action.READ, Action.CREATE]}
-  ])  
+  @Permissions([ {resource: Resource.USERS, actions: [Action.READ, Action.CREATE]} ])  
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);
   }
 
-  @Permissions([
-    {resource: Resource.USERS, actions: [Action.READ]}
-  ])
+  @Permissions([ {resource: Resource.USERS, actions: [Action.READ]} ])
   @Get()
   findAll() {
     return this.usersService.findAll();
   }
 
-  @Permissions([
-    {resource: Resource.USERS, actions: [Action.SHOW]}
-  ])
+  @Permissions([ {resource: Resource.USERS, actions: [Action.SHOW]} ])
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
 
+  @Permissions([ {resource: Resource.USERS, actions: [Action.UPDATE]} ])
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(+id, updateUserDto);
   }
 
-  @Permissions([
-    {resource: Resource.USERS, actions: [Action.DELETE]}
-  ])
+  @Permissions([ {resource: Resource.USERS, actions: [Action.DELETE]} ])
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);

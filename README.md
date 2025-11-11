@@ -673,3 +673,14 @@ Then come in seed file and run
 npx prisma db seed
 ```
 
+Add Permission decorator on controller
+
+
+```typescript
+@Permissions([ {resource: Resource.USERS, actions: [Action.READ]} ])
+@Get()
+findAll() {
+  return this.usersService.findAll();
+}
+```
+
