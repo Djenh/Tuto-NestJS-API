@@ -9,6 +9,7 @@ import { ServicesModule } from './services/services.module';
 import { PicturesModule } from './pictures/pictures.module';
 import configuration from 'config/configuration';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
+import { RolesModule } from './roles/roles.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { LoggerMiddleware } from './middlewares/logger.middleware';
     UsersModule,
     ServicesModule,
     PicturesModule,
+    RolesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

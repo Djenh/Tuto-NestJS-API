@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtStrategy } from './jwt.strategy';
+import { RolesModule } from 'src/roles/roles.module';
 
 @Module({
   imports: [
@@ -19,9 +20,11 @@ import { JwtStrategy } from './jwt.strategy';
         secret: await config.get('jwt.secret'), 
         signOptions: { expiresIn: '1d'},
       }),
-    })
+    }),
+    RolesModule
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, PrismaService]
+  providers: [AuthService, JwtStrategy, PrismaService],
+  exports: [AuthService]
 })
 export class AuthModule {}

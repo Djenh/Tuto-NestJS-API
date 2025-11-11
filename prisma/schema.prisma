@@ -14,44 +14,84 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
 model User {
-  id    Int     @default(autoincrement()) @id
-  name  String  @db.VarChar(255)
-  email String  @db.VarChar(255) @unique
-  password  String  @db.VarChar(255)
-  phone String? @db.VarChar(255)
-  services Service[]
-  pictures Picture[]
+  id        Int       @id @default(autoincrement())
+  name      String    @db.VarChar(255)
+  email     String    @unique @db.VarChar(255)
+  password  String    @db.VarChar(255)
+  phone     String?   @db.VarChar(255)
+  services  Service[]
+  pictures  Picture[]
+  role      Role      @relation(fields: [roleId], references: [id])
+  roleId    Int       @default(1) @map("role_id")
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
 }
-
 
 model Service {
-  id Int @id @default(autoincrement())
-  name String @db.VarChar(255)
-  price Int
-  description String @db.Text()
-  published Boolean? @default(false)
-  user   User   @relation(fields: [userId], references: [id])
-  userId Int @map("user_id")
-  pictures Picture[]
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  id          Int       @id @default(autoincrement())
+  name        String    @db.VarChar(255)
+  price       Int
+  description String    @db.Text()
+  published   Boolean?  @default(false)
+  user        User      @relation(fields: [userId], references: [id])
+  userId      Int       @map("user_id")
+  pictures    Picture[]
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
 }
 
-
 model Picture {
-  id Int @id @default(autoincrement())
+  id   Int    @id @default(autoincrement())
   path String @db.VarChar(255)
-  
-  user   User   @relation(fields: [userId], references: [id])
-  userId Int @map("user_id")
 
-  service   Service   @relation(fields: [serviceId], references: [id])
-  serviceId Int @map("service_id")
+  user   User @relation(fields: [userId], references: [id])
+  userId Int  @map("user_id")
 
-  createdAt DateTime  @default(now()) @map("created_at")
-  updatedAt DateTime  @updatedAt @map("updated_at")
+  service   Service @relation(fields: [serviceId], references: [id])
+  serviceId Int     @map("service_id")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+model Role {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique @db.VarChar(255)
+  permissions Permission[]
+  users       User[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+}
+
+model Permission {
+  id        Int      @id @default(autoincrement())
+  resource  Resource
+  // actions   Action[]
+  actions   Json     @default("[]")
+  roles     Role[]
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+}
+
+/* model Action {
+  id          Int          @id @default(autoincrement())
+  name        String       @db.VarChar(255)
+  permissions Permission[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+} */
+
+enum Resource {
+  USERS
+  SERVICES
+  PICTURES
+}
+
+enum Action {
+  CREATE 
+  SHOW
+  READ
+  UPDATE 
+  DELETE
 }

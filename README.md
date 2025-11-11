@@ -88,7 +88,7 @@ In the file `schema.prisma` create your models
 
 After model is written, run command to format in Prisma tabulation
 ```bash
-npm prisma format
+npx prisma format
 ```
 
 Now run 
@@ -587,4 +587,89 @@ Test endpoints, with Postman or other API testing tool
 
 ### 5.1. Role based access control
 
+Permissions will be in the format
+`permission : [{"resource": "settings", "actions": ["read", "create"]}]`
+
+Create enums for Resource and Action in the file `prisma\schema.prisma.ts` add the following
+
+
+```typescript
+enum Resource {
+  users
+  services
+  pictures
+}
+
+enum Action {
+  read
+  show
+  create
+  update
+  delete
+}
+```
+
+A Role, Permission and Action models in Prisma. 
+
+Also, in the file `prisma\schema.prisma.ts` create Resource
+
+```typescript
+enum Resource {
+  USERS
+  SERVICES
+  PICTURES
+}
+```
+
+Run 
+
+```bash
+npx prisma format
+```
+```bash
+npx prisma migrate dev --name add_roles
+```
+
+Create a Role module, controller and service
+
+```bash
+nest generate module roles
+```
+
+```bash
+nest generate controller roles
+```
+
+```bash
+nest generate service roles
+```
+
+Create a DTO file for Role `src\roles\role.dto.ts`
+Check my repository for full source code of DTO file.
+
+
+### 5.2. Create Seeder for Role
+
+We need to have default value for Role, Permission and actions in our database before assigning them to the User.
+
+Let's create a seeder by following the Prisma offical documentation
+
+[https://www.prisma.io/docs/orm/prisma-migrate/workflows/seeding](https://www.prisma.io/docs/orm/prisma-migrate/workflows/seeding)
+
+
+### 5.3. Create Permission decorator
+
+Create a decorator file `src\decorators\permission.decorator.ts` 
+
+Got to UserController file
+
+### 5.4. Create Authorization guard
+
+Create a decorator file `src\guards\authorization.guard.ts`
+
+Then come in seed file and run 
+
+```bash
+npx prisma db seed
+```
 

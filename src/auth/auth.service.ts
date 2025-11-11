@@ -1,16 +1,18 @@
-import { ConflictException, HttpException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
 import { RegisterDto } from './dto/register.dto';
 import * as bcrypt from 'bcrypt';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { RolesService } from 'src/roles/roles.service';
 
 
 @Injectable()
 export class AuthService {
     constructor(
         private jwtService: JwtService,
-        private prismaService: PrismaService
+        private prismaService: PrismaService,
+        private roleService: RolesService,
     ) {}
     
 
@@ -25,6 +27,7 @@ export class AuthService {
 
         const user = await this.prismaService.user.create({
             data: {
+                roleId: data.roleId,
                 name: data.name,
                 email: data.email,
                 password: passwordHash,
@@ -62,6 +65,7 @@ export class AuthService {
             where: {id: userId},
             select: {
                 id: true,
+                roleId: true,
                 name: true,
                 email: true,
                 phone: true,
@@ -71,4 +75,18 @@ export class AuthService {
 
         return user;        
     }
+
+
+    async getUserPermissions(userId: number){
+        const user = await this.prismaService.user.findUnique({
+            where: {id: userId}
+        });
+
+        if(!user) throw new BadRequestException("Utilisateur introuvable");
+
+        const role = await this.roleService.getRoleById(user.roleId);
+
+        return role.permissions;
+    }
+
 }
