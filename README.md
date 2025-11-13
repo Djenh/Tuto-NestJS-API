@@ -547,8 +547,6 @@ Check this answer for more explanation about Middleware
 
 
 
-
-
 ### 4.2. Create an Auth Guard file
 Now we need to protect our endpoints by requiring a valid JWT be present on the request. We'll do this by creating an AuthGuard that we can use to protect our routes.
 
@@ -683,4 +681,64 @@ findAll() {
   return this.usersService.findAll();
 }
 ```
+
+Run the command
+
+```bash
+npm run start:dev
+```
+
+
+Test endpoints, with Postman or other API testing tool
+- GET http://ip_address:3000/api/users
+- GET http://ip_address:3000/api/users/1
+
+
+## 6. Logging 
+
+To implement file-based logging in a NestJS application, you typically use a third-party logging library like Winston or Pino, as the built-in NestJS logger doesn't provide direct file output functionality. 
+
+Winston is a popular choice due to its flexibility and extensive features, including file transports and log rotation.
+
+
+### 6.1. Install dependencies
+
+```bash
+npm install nest-winston winston winston-daily-rotate-file
+```
+
+```bash
+npm install -D @types/winston
+```
+
+### 6.2. Create Logger service class
+
+Create a service file `src\logger\my-logger.service.ts`
+Create a module file `src\logger\my-logger.module.ts`
+
+Import MyLoggerModule in `app.module.ts` imports.
+
+
+### 6.3. Integrate Logger in the source code
+
+Import and provide your custom logger service in your `app.module.ts` file
+
+Inject and use your MyLoggerService as needed.
+
+Go to  your `user.service.ts` file and inject logger in the constructor and then use it in the functions.
+
+```typescript
+export class UsersService {
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly logger: MyLoggerService
+  ){}
+
+  async findAll(): Promise<User[]> {
+    this.logger.log("List of users", UsersService.name);
+    return this.prismaService.user.findMany();
+  }
+}
+```
+
 

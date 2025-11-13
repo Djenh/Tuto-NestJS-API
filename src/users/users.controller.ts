@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Req } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -7,6 +7,7 @@ import { Permissions } from 'src/decorators/permission.decorator';
 import { Action, Resource } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthorizationGuard } from 'src/guards/authorization.guard';
+import { Request } from 'express';
 
 
 @Controller('users')
@@ -23,7 +24,9 @@ export class UsersController {
 
   @Permissions([ {resource: Resource.USERS, actions: [Action.READ]} ])
   @Get()
-  findAll() {
+  findAll(@Req() req: Request) {
+    /* console.log("USER IN REQ");
+    console.log(req['user']); */
     return this.usersService.findAll();
   }
 

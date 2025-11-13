@@ -10,6 +10,7 @@ import { PicturesModule } from './pictures/pictures.module';
 import configuration from 'config/configuration';
 import { LoggerMiddleware } from './middlewares/logger.middleware';
 import { RolesModule } from './roles/roles.module';
+import { MyLoggerModule } from './logger/my-logger.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { RolesModule } from './roles/roles.module';
     ServicesModule,
     PicturesModule,
     RolesModule,
+    MyLoggerModule
   ],
   controllers: [AppController],
   providers: [AppService],

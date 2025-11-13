@@ -6,9 +6,10 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { AuthService } from 'src/auth/auth.service';
 import { AuthModule } from 'src/auth/auth.module';
 import { RolesModule } from 'src/roles/roles.module';
+import { MyLoggerModule } from 'src/logger/my-logger.module';
 
 @Module({
-  imports: [PrismaModule, AuthModule, RolesModule],
+  imports: [PrismaModule, AuthModule, RolesModule, MyLoggerModule],
   controllers: [UsersController],
   providers: [UsersService, AuthService, PrismaService],
 })
