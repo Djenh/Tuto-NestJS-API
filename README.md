@@ -711,6 +711,7 @@ npm install nest-winston winston winston-daily-rotate-file
 npm install -D @types/winston
 ```
 
+
 ### 6.2. Create Logger service class
 
 Create a service file `src\logger\my-logger.service.ts`
@@ -740,5 +741,59 @@ export class UsersService {
   }
 }
 ```
+
+
+
+Execute the project and check the content of logs in `root\dist\logs\logfilename.ts` file
+
+## 7. Updload file
+
+### 7.1. Install packages
+
+Install the following packages
+
+```bash
+npm i @nestjs/platform-express multer @types/multer
+```
+
+
+### 7.2. File upload handler
+
+Add Multer module in `app.module.ts` file
+
+```typescript
+@Module({
+  imports: [
+    MulterModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (config) => ({
+        dest: await config.get('multer.destination'), 
+        limits: {
+          fileSize: 1000*1000*10, //10MB
+        }
+      }),      
+    }),
+    ...
+  ]
+}
+)
+```
+Now go to `app.controller.ts` and add upload function
+It will require do create a **files** folder that contains 
+- create-file.dto.ts
+- file.utils.ts
+
+
+Run the command
+
+```bash
+npm run start:dev
+```
+
+
+Test endpoints, with Postman or other API testing tool
+- GET http://ip_address:3000/api/upload
+
 
 
